@@ -9,6 +9,17 @@ COPY VERSION /app/VERSION
 RUN npm run build
 
 FROM python:3.12-slim AS runtime
+
+ARG VERSION=dev
+ARG IMAGE_CREATED=unknown
+
+LABEL org.opencontainers.image.title="Canvastool" \
+    org.opencontainers.image.description="Teacher tool for Canvas: manage sections and groups, view assignments and grades (read-only)." \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.vendor="Fontys ICT" \
+    org.opencontainers.image.created="${IMAGE_CREATED}" \
+    org.opencontainers.image.base.name="docker.io/library/python:3.12-slim"
+
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 COPY requirements.txt ./

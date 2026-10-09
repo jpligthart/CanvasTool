@@ -5,6 +5,9 @@ services:
     image: zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION:?Set CANVASTOOL_VERSION or use scripts/build-and-push.ps1}
     build:
       context: .
+      args:
+        VERSION: ${CANVASTOOL_VERSION}
+        IMAGE_CREATED: ${IMAGE_CREATED:-unknown}
       tags:
         - zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION}
         - zotregistry.jelph.nl/fontysict/canvastool:latest

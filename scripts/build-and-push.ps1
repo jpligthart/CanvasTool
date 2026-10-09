@@ -20,6 +20,8 @@ if (-not $env:CANVASTOOL_VERSION) {
 $versionTag = "${imageRepo}:$($env:CANVASTOOL_VERSION)"
 $latestTag = "${imageRepo}:latest"
 
+$env:IMAGE_CREATED = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+
 Write-Host "Building $versionTag (+ latest)..." -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
