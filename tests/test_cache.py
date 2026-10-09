@@ -1,0 +1,83 @@
+import asyncio
+
+from app.cache import TTLCache
+
+
+async def test_hit_within_ttl_calls_loader_once():
+    cache = TTLCache()
+    calls = 0
+
+    async def load():
+        nonlocal calls
+        calls += 1
+        return calls
+
+    assert await cache.get_or_load(("course", 1, "x"), 60, load) == 1
+    assert await cache.get_or_load(("course", 1, "x"), 60, load) == 1
+    assert calls == 1
+
+
+async def test_concurrent_requests_share_one_load():
+    cache = TTLCache()
+    calls = 0
+
+    async def load():
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0.01)
+        return "v"
+
+    results = await asyncio.gather(*(cache.get_or_load(("k",), 60, load) for _ in range(5)))
+    assert results == ["v"] * 5
+    assert calls == 1
+
+
+async def test_invalidate_course_drops_only_that_course():
+    cache = TTLCache()
+
+    async def load():
+        return object()
+
+    a1 = await cache.get_or_load(("course", 1, "x"), 60, load)
+    b1 = await cache.get_or_load(("course", 12, "x"), 60, load)
+    cache.invalidate_course(1)
+    assert await cache.get_or_load(("course", 1, "x"), 60, load) is not a1
+    assert await cache.get_or_load(("course", 12, "x"), 60, load) is b1
+
+
+async def test_load_started_before_invalidation_is_not_stored():
+    cache = TTLCache()
+    release = asyncio.Event()
+
+    async def slow():
+        await release.wait()
+        return "stale"
+
+    task = asyncio.create_task(cache.get_or_load(("course", 1, "x"), 60, slow))
+    await asyncio.sleep(0)
+    cache.invalidate_course(1)
+    release.set()
+    assert await task == "stale"
+
+    async def fresh():
+        return "fresh"
+
+    assert await cache.get_or_load(("course", 1, "x"), 60, fresh) == "fresh"
+
+
+async def test_failed_load_is_not_cached():
+    cache = TTLCache()
+
+    async def boom():
+        raise RuntimeError("nope")
+
+    for _ in range(2):
+        try:
+            await cache.get_or_load(("k",), 60, boom)
+        except RuntimeError:
+            pass
+
+    async def ok():
+        return 1
+
+    assert await cache.get_or_load(("k",), 60, ok) == 1

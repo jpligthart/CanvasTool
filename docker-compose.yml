@@ -1,0 +1,8 @@
+services:
+  canvastool:
+    build: .
+    ports:
+      - "127.0.0.1:8320:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
