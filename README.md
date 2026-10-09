@@ -5,27 +5,32 @@ Lokale webapp voor docenten: Canvas-cursussen beheren (secties, groepen) en cijf
 ## Starten
 
 1. Kopieer `.env.example` naar `.env` en vul `CANVAS_BASE_URL` en `CANVAS_API_TOKEN` in.
-2. Start met Docker:
+2. Start met Docker (image-tag uit `VERSION`):
 
 ```powershell
-docker compose up --build
+$env:CANVASTOOL_VERSION = (Get-Content VERSION).Trim()
+docker compose up --build -d
 ```
 
 3. Open http://127.0.0.1:8320
 
-## Versie
+## Versie & Docker
 
-De applicatieversie staat in **`VERSION`** (bijv. `0.1.0`). Die waarde komt in de UI, `/api/health` en de Docker-image-tag.
+**Eén bestand:** pas alleen **`VERSION`** aan (bijv. `0.1.0`). Die waarde gaat naar de UI, `/api/health` en de Docker-image-tag.
 
-Bij een release: pas `VERSION` aan en zet in `.env` dezelfde waarde bij `CANVASTOOL_VERSION` (zie `.env.example`). Daarna:
+Bouwen en naar Zot pushen (versie-tag + `latest`):
 
 ```powershell
-docker compose build
-docker push zotregistry.jelph.nl/jelph/canvastool:<versie>
-docker push zotregistry.jelph.nl/jelph/canvastool:latest
+pwsh ./scripts/build-and-push.ps1
 ```
 
-`docker compose build` (en `up --build`) tagt **tegelijk** de versie-tag en `latest` — één build, twee tags.
+Alleen bouwen, niet pushen:
+
+```powershell
+pwsh ./scripts/build-and-push.ps1 -SkipPush
+```
+
+Plain `docker compose` zonder script faalt expres (geen stille verkeerde tag).
 
 ## Frontend development (optioneel)
 

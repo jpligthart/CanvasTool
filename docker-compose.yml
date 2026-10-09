@@ -1,11 +1,12 @@
+# Image tag: CANVASTOOL_VERSION from ./VERSION via scripts/build-and-push.ps1 (or set env manually for compose up)
 services:
   canvastool:
     container_name: canvastool
-    image: zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:-0.1.0}
+    image: zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:?Set CANVASTOOL_VERSION or use compose.ps1 / compose.sh}
     build:
       context: .
       tags:
-        - zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:-0.1.0}
+        - zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION}
         - zotregistry.jelph.nl/jelph/canvastool:latest
     ports:
       - "127.0.0.1:8320:8080"
