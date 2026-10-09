@@ -51,7 +51,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ name }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["sections"]);
     return r;
   },
 
@@ -60,7 +60,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ user_ids: userIds, section_id: sectionId }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["students", "sections", "grade-summary"]);
     return r;
   },
 
@@ -69,7 +69,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ user_id: userId, section_id: sectionId }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["students", "sections", "grade-summary"]);
     return r;
   },
 
@@ -83,7 +83,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ name }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["groups"]);
     return r;
   },
 
@@ -92,7 +92,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ category_id: categoryId, name }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["groups"]);
     return r;
   },
 
@@ -101,7 +101,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ user_ids: userIds, group_id: groupId, category_id: categoryId }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["groups", "students"]);
     return r;
   },
 
@@ -110,7 +110,7 @@ export const api = {
       method: "DELETE",
       body: JSON.stringify({ user_id: userId, group_id: groupId, category_id: categoryId }),
     });
-    invalidateCourse(courseId);
+    invalidateCourse(courseId, ["groups", "students"]);
   },
 
   assignments: (courseId: number) =>

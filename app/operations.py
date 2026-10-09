@@ -103,7 +103,7 @@ async def create_section(client: CanvasClient, course_id: int, name: str) -> dic
         f"/api/v1/courses/{course_id}/sections",
         json={"course_section": {"name": name}},
     )
-    cache.invalidate_course(course_id)
+    cache.invalidate_course(course_id, ["sections"])
     return {"id": created["id"], "name": created.get("name")}
 
 
@@ -163,7 +163,7 @@ async def bulk_place_in_section(
     try:
         return await gather_limited(user_ids, place)
     finally:
-        cache.invalidate_course(course_id)
+        cache.invalidate_course(course_id, ["users", "sections", "grades"])
 
 
 # ---------- Groups ----------
@@ -213,13 +213,13 @@ async def list_group_categories(
 
 async def create_group_category(client: CanvasClient, course_id: int, name: str) -> dict[str, Any]:
     created = await client.request("POST", f"/api/v1/courses/{course_id}/group_categories", json={"name": name})
-    cache.invalidate_course(course_id)
+    cache.invalidate_course(course_id, ["groups"])
     return {"id": created["id"], "name": created.get("name")}
 
 
 async def create_group(client: CanvasClient, course_id: int, category_id: int, name: str) -> dict[str, Any]:
     created = await client.request("POST", f"/api/v1/group_categories/{category_id}/groups", json={"name": name})
-    cache.invalidate_course(course_id)
+    cache.invalidate_course(course_id, ["groups"])
     return {"id": created["id"], "name": created.get("name")}
 
 
@@ -260,44 +260,33 @@ async def bulk_add_to_group(
     try:
         return await gather_limited(user_ids, add)
     finally:
-        cache.invalidate_course(course_id)
+        cache.invalidate_course(course_id, ["groups"])
 
 
 async def remove_user_from_group(client: CanvasClient, course_id: int, group_id: int, user_id: int) -> None:
     try:
         await client.request("DELETE", f"/api/v1/groups/{group_id}/users/{user_id}")
     finally:
-        cache.invalidate_course(course_id)
+        cache.invalidate_course(course_id, ["groups"])
 
 
 # ---------- Students ----------
 
 
-async def list_course_students(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
+async def _list_course_users(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
     async def load() -> list[dict[str, Any]]:
-        users, sections, categories = await asyncio.gather(
-            client.get_paginated(
-                f"/api/v1/courses/{course_id}/users",
-                params={"enrollment_type[]": "student", "include[]": ["enrollments", "email"]},
-            ),
-            list_course_sections(client, course_id),
-            list_group_categories(client, course_id),
+        users = await client.get_paginated(
+            f"/api/v1/courses/{course_id}/users",
+            params={"enrollment_type[]": "student", "include[]": ["enrollments", "email"]},
         )
-        section_name = {s["id"]: s["name"] for s in sections}
-        groups_by_user: dict[int, list[dict[str, Any]]] = defaultdict(list)
-        for cat in categories:
-            for g in cat["groups"]:
-                for m in g["members"]:
-                    groups_by_user[m["id"]].append({"id": g["id"], "name": g["name"], "category_id": cat["id"]})
-
-        students: list[dict[str, Any]] = []
+        result: list[dict[str, Any]] = []
         for u in users:
             section_ids: list[int] = []
             for e in u.get("enrollments") or []:
                 sid = e.get("course_section_id")
                 if e.get("type") == "StudentEnrollment" and e.get("enrollment_state") == "active" and sid:
                     section_ids.append(sid)
-            students.append(
+            result.append(
                 {
                     "id": u["id"],
                     "name": u.get("name") or u.get("sortable_name"),
@@ -305,14 +294,37 @@ async def list_course_students(client: CanvasClient, course_id: int) -> list[dic
                     "sis_user_id": u.get("sis_user_id"),
                     "login_id": u.get("login_id"),
                     "section_ids": section_ids,
-                    "section_names": [section_name.get(sid, f"Sectie {sid}") for sid in section_ids],
-                    "groups": groups_by_user.get(u["id"], []),
                 }
             )
-        students.sort(key=lambda s: (s.get("name") or "").lower())
-        return students
+        result.sort(key=lambda s: (s.get("name") or "").lower())
+        return result
 
-    return await cache.get_or_load(("course", course_id, "students"), TTL_ROSTER, load)
+    return await cache.get_or_load(("course", course_id, "users"), TTL_ROSTER, load)
+
+
+async def list_course_students(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
+    """Students enriched with section and group names; each part is cached on its own,
+    so a group change only reloads groups."""
+    users, sections, categories = await asyncio.gather(
+        _list_course_users(client, course_id),
+        list_course_sections(client, course_id),
+        list_group_categories(client, course_id),
+    )
+    section_name = {s["id"]: s["name"] for s in sections}
+    groups_by_user: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for cat in categories:
+        for g in cat["groups"]:
+            for m in g["members"]:
+                groups_by_user[m["id"]].append({"id": g["id"], "name": g["name"], "category_id": cat["id"]})
+
+    return [
+        {
+            **u,
+            "section_names": [section_name.get(sid, f"Sectie {sid}") for sid in u["section_ids"]],
+            "groups": groups_by_user.get(u["id"], []),
+        }
+        for u in users
+    ]
 
 
 # ---------- Assignments & grades (read-only) ----------

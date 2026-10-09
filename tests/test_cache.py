@@ -45,6 +45,41 @@ async def test_invalidate_course_drops_only_that_course():
     assert await cache.get_or_load(("course", 12, "x"), 60, load) is b1
 
 
+async def test_invalidate_course_kinds_keeps_other_kinds():
+    cache = TTLCache()
+
+    async def load():
+        return object()
+
+    groups = await cache.get_or_load(("course", 1, "groups"), 60, load)
+    users = await cache.get_or_load(("course", 1, "users"), 60, load)
+    cache.invalidate_course(1, ["groups"])
+    assert await cache.get_or_load(("course", 1, "groups"), 60, load) is not groups
+    assert await cache.get_or_load(("course", 1, "users"), 60, load) is users
+
+
+async def test_kind_invalidation_discards_inflight_load_of_that_kind_only():
+    cache = TTLCache()
+    release = asyncio.Event()
+
+    async def slow():
+        await release.wait()
+        return "stale"
+
+    groups_task = asyncio.create_task(cache.get_or_load(("course", 1, "groups"), 60, slow))
+    users_task = asyncio.create_task(cache.get_or_load(("course", 1, "users"), 60, slow))
+    await asyncio.sleep(0)
+    cache.invalidate_course(1, ["groups"])
+    release.set()
+    await asyncio.gather(groups_task, users_task)
+
+    async def fresh():
+        return "fresh"
+
+    assert await cache.get_or_load(("course", 1, "groups"), 60, fresh) == "fresh"
+    assert await cache.get_or_load(("course", 1, "users"), 60, fresh) == "stale"
+
+
 async def test_load_started_before_invalidation_is_not_stored():
     cache = TTLCache()
     release = asyncio.Event()

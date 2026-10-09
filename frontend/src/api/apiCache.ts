@@ -35,10 +35,17 @@ export function invalidateKey(key: string): void {
   listeners.forEach((l) => l(null));
 }
 
-export function invalidateCourse(courseId: number): void {
+export type CoursePart = "students" | "sections" | "groups" | "grade-summary";
+
+/** Drop cached data of one course; with `parts`, only those endpoints. */
+export function invalidateCourse(courseId: number, parts?: CoursePart[]): void {
   const prefix = `/api/courses/${courseId}/`;
   for (const k of store.keys()) {
-    if (k.startsWith(prefix)) store.delete(k);
+    if (!k.startsWith(prefix)) continue;
+    const rest = k.slice(prefix.length);
+    if (!parts || parts.some((p) => rest === p || rest.startsWith(`${p}?`) || rest.startsWith(`${p}/`))) {
+      store.delete(k);
+    }
   }
   listeners.forEach((l) => l(courseId));
 }

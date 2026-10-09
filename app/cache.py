@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Hashable
+from collections.abc import Awaitable, Callable, Hashable, Iterable
 from typing import Any, TypeVar
 
 T = TypeVar("T")
@@ -19,17 +19,32 @@ def _course_of(key: tuple[Hashable, ...]) -> int | None:
     return None
 
 
+def _kind_of(key: tuple[Hashable, ...]) -> Hashable | None:
+    return key[2] if len(key) >= 3 and key[0] == "course" else None
+
+
 class TTLCache:
     """In-memory TTL cache with in-flight de-duplication.
 
-    A load that started before an invalidation of its course is not stored,
-    so a write never gets overwritten by a slower, older read.
+    A load that started before an invalidation of its course (or of its kind
+    within that course) is not stored, so a write never gets overwritten by a
+    slower, older read.
     """
 
     def __init__(self) -> None:
         self._data: dict[tuple[Hashable, ...], tuple[float, Any]] = {}
         self._inflight: dict[tuple[Hashable, ...], asyncio.Future[Any]] = {}
-        self._generation: dict[int | None, int] = {}
+        self._generation: dict[Hashable, int] = {}
+
+    def _generation_of(self, key: tuple[Hashable, ...]) -> tuple[int, int]:
+        course = _course_of(key)
+        return (
+            self._generation.get(course, 0),
+            self._generation.get((course, _kind_of(key)), 0),
+        )
+
+    def _bump(self, scope: Hashable) -> None:
+        self._generation[scope] = self._generation.get(scope, 0) + 1
 
     async def get_or_load(
         self,
@@ -50,8 +65,7 @@ class TTLCache:
         if pending is not None and not fresh:
             return await asyncio.shield(pending)
 
-        course = _course_of(key)
-        generation = self._generation.get(course, 0)
+        generation = self._generation_of(key)
         future: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
         self._inflight[key] = future
         try:
@@ -61,7 +75,7 @@ class TTLCache:
             future.exception()
             raise
         else:
-            if self._generation.get(course, 0) == generation:
+            if self._generation_of(key) == generation:
                 self._data[key] = (time.monotonic() + ttl, value)
             future.set_result(value)
             return value
@@ -69,17 +83,25 @@ class TTLCache:
             if self._inflight.get(key) is future:
                 del self._inflight[key]
 
-    def invalidate_course(self, course_id: int) -> None:
-        self._generation[course_id] = self._generation.get(course_id, 0) + 1
-        for key in [k for k in self._data if _course_of(k) == course_id]:
+    def invalidate_course(self, course_id: int, kinds: Iterable[str] | None = None) -> None:
+        """Drop cached data of one course; with `kinds`, only those kinds (e.g. "groups")."""
+        if kinds is None:
+            self._bump(course_id)
+            doomed = [k for k in self._data if _course_of(k) == course_id]
+        else:
+            wanted = set(kinds)
+            for kind in wanted:
+                self._bump((course_id, kind))
+            doomed = [k for k in self._data if _course_of(k) == course_id and _kind_of(k) in wanted]
+        for key in doomed:
             del self._data[key]
 
     def invalidate(self, key: tuple[Hashable, ...]) -> None:
         self._data.pop(key, None)
 
     def clear(self) -> None:
-        for course in list(self._generation) + [None]:
-            self._generation[course] = self._generation.get(course, 0) + 1
+        for scope in list(self._generation) + [None]:
+            self._bump(scope)
         self._data.clear()
 
 

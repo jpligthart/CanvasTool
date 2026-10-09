@@ -46,16 +46,20 @@ export function CommandPalette({
   );
 
   const searchCourses = useMemo<Course[]>(() => {
-    if (!courses) return [];
+    if (!open || !courses) return [];
     if (courseId) return currentCourse ? [currentCourse] : [];
     const favs = accountId ? loadFavorites(accountId) : new Set<number>();
     return [...courses.active, ...courses.past].filter((c) => favs.has(c.id));
-  }, [courses, courseId, currentCourse, accountId]);
+  }, [open, courses, courseId, currentCourse, accountId]);
 
   useEffect(() => {
     if (!open) return;
     setQ("");
     setActive(0);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     setStudents(null);
     if (searchCourses.length === 0) {
       setStudents([]);
