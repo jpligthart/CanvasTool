@@ -5,12 +5,13 @@ Lokale webapp voor docenten: Canvas-cursussen beheren (secties, groepen) en cijf
 ## Starten
 
 1. Kopieer `.env.example` naar `.env` en vul `CANVAS_BASE_URL` en `CANVAS_API_TOKEN` in.
-2. Start met Docker (image-tag uit `VERSION`):
+2. Start met Docker:
 
 ```powershell
-$env:CANVASTOOL_VERSION = (Get-Content VERSION).Trim()
 docker compose up --build -d
 ```
+
+Lokaal krijg je image-tag **`local`**; de app-versie in de UI komt nog steeds uit het bestand **`VERSION`** in de image.
 
 3. Open http://127.0.0.1:8320
 
@@ -29,8 +30,6 @@ Alleen bouwen, niet pushen:
 ```powershell
 pwsh ./scripts/build-and-push.ps1 -SkipPush
 ```
-
-Plain `docker compose` zonder script faalt expres (geen stille verkeerde tag).
 
 ## Frontend development (optioneel)
 

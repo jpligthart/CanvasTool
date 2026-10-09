@@ -1,15 +1,15 @@
-# Image tag: CANVASTOOL_VERSION from ./VERSION via scripts/build-and-push.ps1 (or set env manually for compose up)
+# Local: plain `docker compose up` uses tag `local`. Release: scripts/build-and-push.ps1 sets CANVASTOOL_VERSION from VERSION.
 services:
   canvastool:
     container_name: canvastool
-    image: zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION:?Set CANVASTOOL_VERSION or use scripts/build-and-push.ps1}
+    image: zotregistry.jelph.nl/fontysict/canvastool:latest
     build:
       context: .
       args:
-        VERSION: ${CANVASTOOL_VERSION}
+        VERSION: ${CANVASTOOL_VERSION:-local}
         IMAGE_CREATED: ${IMAGE_CREATED:-unknown}
       tags:
-        - zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION}
+        - zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION:-local}
         - zotregistry.jelph.nl/fontysict/canvastool:latest
     ports:
       - "127.0.0.1:8320:8080"
