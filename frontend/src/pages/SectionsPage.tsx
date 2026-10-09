@@ -132,7 +132,7 @@ export function SectionsPage() {
       ) : sections.length === 0 ? (
         <EmptyState title="Nog geen secties" hint="Maak er een aan met 'Nieuwe sectie'." />
       ) : (
-        <TableWrap>
+        <TableWrap fill>
           <thead>
             <tr>
               <Th>Sectie</Th>

@@ -282,7 +282,7 @@ export function StudentsPage() {
           }
         />
       ) : (
-        <TableWrap>
+        <TableWrap fill>
           <thead>
             <tr>
               <Th className="col-check">

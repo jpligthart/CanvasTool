@@ -223,7 +223,7 @@ export function GroupsPage() {
               {active.groups.length === 0 ? (
                 <EmptyState title="Nog geen groepen in deze set" hint="Maak er een aan met 'Nieuwe groep'." />
               ) : (
-                <div className="group-grid">
+                <div className="group-grid fill">
                   {active.groups.map((g) => {
                     const occ = occupancy(g);
                     const open = expanded.has(g.id);

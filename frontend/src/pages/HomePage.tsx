@@ -30,6 +30,18 @@ const QUICK_LINKS = [
 ];
 
 const label = (c: Course) => c.course_code || c.name;
+
+const shortDate = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+
+function period(c: Course): string {
+  const fmt = (v?: string | null) => (v ? shortDate.format(new Date(v)) : null);
+  const start = fmt(c.start_at);
+  const end = fmt(c.end_at);
+  if (start && end) return `${start} – ${end}`;
+  if (start) return `vanaf ${start}`;
+  if (end) return `tot ${end}`;
+  return "—";
+}
 const byLabel = (a: Course, b: Course) => label(a).localeCompare(label(b), "nl");
 
 function matches(c: Course, needle: string): boolean {
@@ -99,6 +111,9 @@ function CourseRow({
         {course.course_code && <div className="cell-sub">{course.name}</div>}
       </Td>
       <Td className="cell-muted">{course.term ?? "—"}</Td>
+      <Td className="cell-muted" style={{ whiteSpace: "nowrap" }}>
+        {period(course)}
+      </Td>
       <Td>
         <Badge tone={course.workflow_state === "available" ? "success" : "neutral"}>
           {course.workflow_state === "available"
@@ -314,12 +329,13 @@ export function HomePage() {
               hint={filtersActive ? "Pas je zoekterm of filters aan." : undefined}
             />
           ) : (
-            <TableWrap>
+            <TableWrap fill>
               <thead>
                 <tr>
                   <Th className="col-check" />
                   <Th>Cursus</Th>
                   <Th>Periode</Th>
+                  <Th>Looptijd</Th>
                   <Th>Status</Th>
                   <Th className="col-actions" />
                 </tr>

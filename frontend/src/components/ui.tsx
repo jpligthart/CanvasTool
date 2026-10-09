@@ -87,9 +87,9 @@ export function LoadingBlock() {
   );
 }
 
-export function TableWrap({ children, style }: PropsWithChildren<{ style?: CSSProperties }>) {
+export function TableWrap({ children, style, fill }: PropsWithChildren<{ style?: CSSProperties; fill?: boolean }>) {
   return (
-    <div className="table-wrap" style={style}>
+    <div className={cx("table-wrap", fill && "fill")} style={style}>
       <table className="table">{children}</table>
     </div>
   );

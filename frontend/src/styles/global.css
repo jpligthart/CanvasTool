@@ -950,9 +950,100 @@ table {
 }
 
 .page {
-  max-width: 1040px;
+  width: 100%;
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 28px 24px 48px;
+  padding: 24px 32px 32px;
+}
+
+/* ---------- Panel scrolling on large screens ----------
+   The page stays put; only the list region (.fill) scrolls, with sticky table headers. */
+
+@media (min-width: 1024px) and (min-height: 600px) {
+  html,
+  body,
+  #root {
+    overflow: hidden;
+  }
+
+  .app {
+    height: 100vh;
+  }
+
+  .course {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .rail {
+    position: static;
+    align-self: stretch;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 20px;
+  }
+
+  .page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .main > *,
+  .page > *,
+  .detail > * {
+    flex-shrink: 0;
+  }
+
+  .main > .fill,
+  .page > .fill,
+  .detail > .fill {
+    flex: 1 1 auto;
+    min-height: 120px;
+    overflow: auto;
+  }
+
+  .group-grid.fill {
+    align-content: start;
+    padding-bottom: 2px;
+  }
+
+  .master-detail.fill {
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .master-detail.fill .master {
+    position: static;
+    max-height: none;
+    min-height: 0;
+  }
+
+  .master-detail.fill .master__list {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .master-detail.fill .detail {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .main > .action-bar {
+    position: static;
+    margin-top: 12px;
+  }
 }
 
 /* ---------- Filters ---------- */

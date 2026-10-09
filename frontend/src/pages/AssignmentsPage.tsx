@@ -139,7 +139,7 @@ function Submissions({ courseId, assignment }: { courseId: number; assignment: A
       {visible.length === 0 ? (
         <EmptyState title="Geen inzendingen in deze selectie" />
       ) : (
-        <TableWrap>
+        <TableWrap fill>
           <thead>
             <tr>
               <Th>Student</Th>
@@ -209,7 +209,7 @@ function GradeOverview({ grades }: { grades: GradeRow[] }) {
       {visible.length === 0 ? (
         <EmptyState title="Geen studenten gevonden" />
       ) : (
-        <TableWrap>
+        <TableWrap fill>
           <thead>
             <tr>
               <Th>Student</Th>
@@ -317,7 +317,7 @@ export function AssignmentsPage() {
       ) : assignments.length === 0 ? (
         <EmptyState title="Geen opdrachten in deze cursus" />
       ) : (
-        <div className="master-detail">
+        <div className="master-detail fill">
           <div className="master">
             <Input type="search" placeholder="Zoek opdracht…" value={q} onChange={(e) => setQ(e.target.value)} />
             <ul className="master__list">
