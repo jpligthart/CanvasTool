@@ -214,7 +214,7 @@ export function HomePage() {
     <div className="page">
       <PageHeader
         title="Jouw cursussen"
-        subtitle="Cursussen waarin je docent bent. Tip: Ctrl+K zoekt overal naar cursussen en studenten."
+        subtitle="Cursussen waarin je docent bent. Tip: Ctrl+K zoekt cursussen, en studenten in je favoriete cursussen."
         actions={
           <Button
             variant="secondary"

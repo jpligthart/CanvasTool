@@ -5,6 +5,7 @@ import type { Course, CoursesResponse, Student } from "../api/types";
 import { loadFavorites } from "../lib/favorites";
 
 type Item = { key: string; group: string; title: string; sub?: string; href: string };
+type StudentPool = { course: Course; students: Student[] }[];
 
 const PAGES = [
   { to: "studenten", label: "Studenten" },
@@ -16,6 +17,9 @@ const PAGES = [
 const MAX_PER_GROUP = 8;
 
 const courseLabel = (c: Course) => c.course_code || c.name;
+
+const matchesStudent = (s: Student, needle: string) =>
+  [s.name, s.email, s.sis_user_id, s.login_id].filter(Boolean).join(" ").toLowerCase().includes(needle);
 
 export function CommandPalette({
   open,
@@ -33,25 +37,41 @@ export function CommandPalette({
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
-  const [students, setStudents] = useState<Student[] | null>(null);
+  const [students, setStudents] = useState<StudentPool | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const currentCourse = useMemo(
+    () => (courseId && courses ? [...courses.active, ...courses.past].find((c) => c.id === courseId) : undefined),
+    [courses, courseId],
+  );
+
+  const searchCourses = useMemo<Course[]>(() => {
+    if (!courses) return [];
+    if (courseId) return currentCourse ? [currentCourse] : [];
+    const favs = accountId ? loadFavorites(accountId) : new Set<number>();
+    return [...courses.active, ...courses.past].filter((c) => favs.has(c.id));
+  }, [courses, courseId, currentCourse, accountId]);
 
   useEffect(() => {
     if (!open) return;
     setQ("");
     setActive(0);
     setStudents(null);
-    if (courseId) {
-      api.students(courseId)
-        .then(setStudents)
-        .catch(() => setStudents([]));
+    if (searchCourses.length === 0) {
+      setStudents([]);
+      return;
     }
-  }, [open, courseId]);
-
-  const currentCourse = useMemo(
-    () => (courseId && courses ? [...courses.active, ...courses.past].find((c) => c.id === courseId) : undefined),
-    [courses, courseId],
-  );
+    let cancelled = false;
+    Promise.allSettled(searchCourses.map((c) => api.students(c.id))).then((results) => {
+      if (cancelled) return;
+      setStudents(
+        results.flatMap((r, i) => (r.status === "fulfilled" ? [{ course: searchCourses[i], students: r.value }] : [])),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, searchCourses]);
 
   const items = useMemo<Item[]>(() => {
     const needle = q.trim().toLowerCase();
@@ -66,19 +86,19 @@ export function CommandPalette({
       }
     }
 
-    if (courseId && needle && students) {
+    if (needle && students) {
       const hits = students
-        .filter((s) =>
-          [s.name, s.email, s.sis_user_id, s.login_id].filter(Boolean).join(" ").toLowerCase().includes(needle),
+        .flatMap(({ course, students: list }) =>
+          list.filter((s) => matchesStudent(s, needle)).map((s) => ({ course, s })),
         )
-        .slice(0, MAX_PER_GROUP);
-      for (const s of hits) {
+        .slice(0, courseId ? MAX_PER_GROUP : MAX_PER_GROUP * 2);
+      for (const { course, s } of hits) {
         out.push({
-          key: `s-${s.id}`,
-          group: "Studenten in deze cursus",
+          key: `s-${course.id}-${s.id}`,
+          group: courseId ? "Studenten in deze cursus" : "Studenten in favoriete cursussen",
           title: s.name,
-          sub: [s.email, s.section_names.join(", ")].filter(Boolean).join(" · "),
-          href: `/cursus/${courseId}/studenten?q=${encodeURIComponent(s.name)}`,
+          sub: [s.email, courseId ? s.section_names.join(", ") : courseLabel(course)].filter(Boolean).join(" · "),
+          href: `/cursus/${course.id}/studenten?q=${encodeURIComponent(s.name)}`,
         });
       }
     }
@@ -136,7 +156,12 @@ export function CommandPalette({
     }
   };
 
-  const loadingStudents = !!courseId && !!q.trim() && students === null;
+  const loadingStudents = !!q.trim() && students === null;
+  const placeholder = courseId
+    ? "Zoek student, cursus of onderdeel…"
+    : searchCourses.length > 0
+      ? "Zoek cursus, of student in je favorieten…"
+      : "Zoek cursus… (studenten: maak eerst een cursus favoriet)";
 
   return (
     <div className="palette-backdrop" onMouseDown={onClose}>
@@ -151,7 +176,7 @@ export function CommandPalette({
         <input
           className="palette__input"
           autoFocus
-          placeholder={courseId ? "Zoek student, cursus of onderdeel…" : "Zoek cursus…"}
+          placeholder={placeholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label="Zoekterm"
