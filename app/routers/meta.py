@@ -34,8 +34,10 @@ async def health():
 
 
 @router.post("/cache/clear")
-async def clear_cache(course_id: int | None = None):
-    if course_id is None:
+async def clear_cache(course_id: int | None = None, all: bool = False):
+    if all:
+        cache.clear()
+    elif course_id is None:
         cache.invalidate(("courses",))
     else:
         cache.invalidate_course(course_id)

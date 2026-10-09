@@ -1,4 +1,4 @@
-import { cachedFetch, fetchedAt, invalidateCourse, invalidateKey, onInvalidate } from "./apiCache";
+import { cachedFetch, clearAll, fetchedAt, invalidateCourse, invalidateKey, onInvalidate } from "./apiCache";
 import type {
   Assignment,
   BulkResult,
@@ -132,6 +132,11 @@ export const api = {
   refreshCourses: async () => {
     await json("/api/cache/clear", { method: "POST" });
     return cachedFetch("/api/courses", () => json<CoursesResponse>("/api/courses"), { force: true });
+  },
+  refreshAll: async () => {
+    await json("/api/cache/clear?all=true", { method: "POST" });
+    clearAll();
+    return cachedFetch("/api/courses", () => json<CoursesResponse>("/api/courses"));
   },
   refreshCourse: async (courseId: number) => {
     await json(`/api/cache/clear?course_id=${courseId}`, { method: "POST" });

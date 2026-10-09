@@ -27,15 +27,75 @@
   --radius: 10px;
   --radius-sm: 6px;
   --shadow-pop: 0 8px 28px rgba(20, 23, 28, 0.16);
+  --shadow-raise: 0 1px 2px rgba(20, 23, 28, 0.1);
+  --bg-chip: #eef0f3;
+  --bg-segment: #e9ecf0;
+  --backdrop: rgba(20, 23, 28, 0.42);
+  color-scheme: light;
   --topbar-h: 52px;
   --rail-w: 232px;
   --font: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg-shell: #0b0d10;
+  --bg-rail: #12161b;
+  --bg-rail-hover: #1d232b;
+  --bg-content: #0f1216;
+  --bg-card: #171b21;
+  --bg-subtle: #1b2027;
+  --bg-hover: #212730;
+  --text-primary: #e6e8eb;
+  --text-muted: #a0a8b2;
+  --text-faint: #6f7882;
+  --accent: #d9714f;
+  --accent-hover: #e5835f;
+  --accent-soft: rgba(217, 113, 79, 0.16);
+  --accent-on-dark: rgba(217, 113, 79, 0.24);
+  --success: #45b583;
+  --success-soft: rgba(69, 181, 131, 0.15);
+  --warning: #d9ae3c;
+  --warning-soft: rgba(217, 174, 60, 0.15);
+  --danger: #ea6354;
+  --danger-soft: rgba(234, 99, 84, 0.14);
+  --border: #262c35;
+  --border-strong: #343c47;
+  --border-dark: #232a33;
+  --shadow-pop: 0 10px 32px rgba(0, 0, 0, 0.5);
+  --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --bg-chip: #232932;
+  --bg-segment: #12161b;
+  --backdrop: rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-on-dark-muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-rail-hover);
+  color: var(--text-on-dark);
 }
 
 html,
@@ -279,7 +339,7 @@ table {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: #eef0f3;
+  background: var(--bg-chip);
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -441,7 +501,7 @@ table {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(20, 23, 28, 0.45);
+  background: var(--backdrop);
 }
 
 .modal {
@@ -1070,7 +1130,7 @@ table {
   z-index: 950;
   display: flex;
   justify-content: flex-end;
-  background: rgba(20, 23, 28, 0.35);
+  background: var(--backdrop);
 }
 
 .drawer {
@@ -1260,7 +1320,7 @@ table {
   padding: 1px 7px;
   border-radius: 999px;
   font-size: 12px;
-  background: #eef0f3;
+  background: var(--bg-chip);
   color: var(--text-muted);
 }
 
@@ -1359,7 +1419,7 @@ table {
   justify-content: center;
   align-items: flex-start;
   padding: 12vh 16px 16px;
-  background: rgba(20, 23, 28, 0.4);
+  background: var(--backdrop);
 }
 
 .palette {
@@ -1598,7 +1658,7 @@ table {
   margin-bottom: 12px;
   padding: 3px;
   border-radius: var(--radius-sm);
-  background: #e9ecf0;
+  background: var(--bg-segment);
 }
 
 .toolbar .segmented {
@@ -1624,7 +1684,7 @@ table {
 .segmented button.is-active {
   background: var(--bg-card);
   color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(20, 23, 28, 0.1);
+  box-shadow: var(--shadow-raise);
 }
 
 .segmented__count {

@@ -4,10 +4,23 @@ import { api } from "../api/client";
 import type { Course } from "../api/types";
 import { useShell } from "../components/Layout";
 import { errorMessage, useToast } from "../components/Toast";
+import { loadCourseFilters, saveCourseFilters, type CourseFilters, type CourseStatus } from "../lib/courseFilters";
 import { loadFavorites, toggleFavorite } from "../lib/favorites";
-import { Alert, Badge, Button, EmptyState, Input, LoadingBlock, PageHeader, TableWrap, Td, Th } from "../components/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Input,
+  LoadingBlock,
+  PageHeader,
+  Select,
+  TableWrap,
+  Td,
+  Th,
+} from "../components/ui";
 
-type Scope = "active" | "past";
+const isPublished = (c: Course) => c.workflow_state === "available" || c.workflow_state === "completed";
 
 const QUICK_LINKS = [
   { to: "studenten", label: "Studenten" },
@@ -104,14 +117,25 @@ export function HomePage() {
   const { me, courses, setCourses } = useShell();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
-  const [scope, setScope] = useState<Scope>("active");
+  const [filters, setFilters] = useState<CourseFilters>(() => loadCourseFilters(me?.user?.id));
   const [q, setQ] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const { scope, term, status } = filters;
 
   useEffect(() => {
-    if (me?.user?.id) setFavorites(loadFavorites(me.user.id));
+    if (!me?.user?.id) return;
+    setFavorites(loadFavorites(me.user.id));
+    setFilters(loadCourseFilters(me.user.id));
   }, [me?.user?.id]);
+
+  const updateFilters = (patch: Partial<CourseFilters>) => {
+    setFilters((prev) => {
+      const next = { ...prev, ...patch };
+      saveCourseFilters(me?.user?.id, next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (courses) return;
@@ -127,22 +151,43 @@ export function HomePage() {
     return [...courses.active, ...courses.past].filter((c) => favorites.has(c.id)).sort(byLabel);
   }, [courses, favorites]);
 
-  const list = useMemo(() => {
-    if (!courses) return [];
-    const source = scope === "active" ? courses.active : courses.past;
-    return source.filter((c) => matches(c, needle)).sort(byLabel);
-  }, [courses, scope, needle]);
+  const source = useMemo(() => (courses ? (scope === "active" ? courses.active : courses.past) : []), [courses, scope]);
+
+  const terms = useMemo(
+    () => [...new Set(source.map((c) => c.term).filter((t): t is string => !!t))].sort((a, b) => b.localeCompare(a, "nl")),
+    [source],
+  );
+  const effectiveTerm = terms.includes(term) ? term : "";
+
+  const list = useMemo(
+    () =>
+      source
+        .filter((c) => matches(c, needle))
+        .filter((c) => !effectiveTerm || c.term === effectiveTerm)
+        .filter((c) => !status || (status === "published") === isPublished(c))
+        .sort(byLabel),
+    [source, needle, effectiveTerm, status],
+  );
+
+  const filtersActive = !!(needle || effectiveTerm || status);
 
   const toggleFav = (courseId: number) => {
     if (!me?.user?.id) return;
     setFavorites(new Set(toggleFavorite(me.user.id, courseId)));
   };
 
-  const refresh = async () => {
+  const refreshAll = async () => {
     setRefreshing(true);
     try {
-      setCourses(await api.refreshCourses());
+      const fresh = await api.refreshAll();
+      setCourses(fresh);
       setError(null);
+      const warm = fresh.active.filter((c) => favorites.has(c.id));
+      await Promise.allSettled(warm.map((c) => api.students(c.id)));
+      toast.success(
+        "Alles ververst",
+        warm.length ? `Cursuslijst en ${warm.length} favoriete cursus${warm.length === 1 ? "" : "sen"} opnieuw geladen.` : undefined,
+      );
     } catch (e) {
       toast.error("Verversen mislukt", errorMessage(e, "Onbekende fout"));
     } finally {
@@ -156,8 +201,13 @@ export function HomePage() {
         title="Jouw cursussen"
         subtitle="Cursussen waarin je docent bent. Tip: Ctrl+K zoekt overal naar cursussen en studenten."
         actions={
-          <Button variant="secondary" onClick={() => void refresh()} disabled={refreshing}>
-            {refreshing ? "Bezig…" : "Verversen"}
+          <Button
+            variant="secondary"
+            onClick={() => void refreshAll()}
+            disabled={refreshing}
+            title="Haalt cursussen, studenten, secties, groepen en cijfers opnieuw op uit Canvas. Handig aan het begin van het semester."
+          >
+            {refreshing ? "Bezig met verversen…" : "Alles verversen"}
           </Button>
         }
       />
@@ -189,7 +239,7 @@ export function HomePage() {
                 role="tab"
                 aria-selected={scope === "active"}
                 className={`tab${scope === "active" ? " is-active" : ""}`}
-                onClick={() => setScope("active")}
+                onClick={() => updateFilters({ scope: "active" })}
               >
                 Lopend <span className="tab__count">{courses.active.length}</span>
               </button>
@@ -198,7 +248,7 @@ export function HomePage() {
                 role="tab"
                 aria-selected={scope === "past"}
                 className={`tab${scope === "past" ? " is-active" : ""}`}
-                onClick={() => setScope("past")}
+                onClick={() => updateFilters({ scope: "past" })}
               >
                 Afgerond <span className="tab__count">{courses.past.length}</span>
               </button>
@@ -212,12 +262,56 @@ export function HomePage() {
                 aria-label="Filter cursussen"
               />
             </div>
+            <Select
+              value={effectiveTerm}
+              onChange={(e) => updateFilters({ term: e.target.value })}
+              aria-label="Filter op periode"
+              className={effectiveTerm ? "select--active" : undefined}
+              disabled={terms.length === 0}
+            >
+              <option value="">Alle periodes</option>
+              {terms.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={status}
+              onChange={(e) => updateFilters({ status: e.target.value as CourseStatus })}
+              aria-label="Filter op status"
+              className={status ? "select--active" : undefined}
+            >
+              <option value="">Alle statussen</option>
+              <option value="published">Gepubliceerd</option>
+              <option value="unpublished">Niet gepubliceerd</option>
+            </Select>
           </div>
+
+          {filtersActive && (
+            <div className="filter-summary">
+              <span>
+                {list.length} van {source.length} cursussen
+              </span>
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  setQ("");
+                  updateFilters({ term: "", status: "" });
+                }}
+              >
+                Filters wissen
+              </button>
+            </div>
+          )}
 
           {list.length === 0 ? (
             <EmptyState
-              title={needle ? "Geen cursussen gevonden" : scope === "active" ? "Geen lopende cursussen" : "Geen afgeronde cursussen"}
-              hint={needle ? "Probeer een andere zoekterm." : undefined}
+              title={
+                filtersActive ? "Geen cursussen gevonden" : scope === "active" ? "Geen lopende cursussen" : "Geen afgeronde cursussen"
+              }
+              hint={filtersActive ? "Pas je zoekterm of filters aan." : undefined}
             />
           ) : (
             <TableWrap>

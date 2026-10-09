@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useMatch, useOutletContext, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Course, CoursesResponse, MeResponse } from "../api/types";
+import { currentTheme, setTheme, type Theme } from "../lib/theme";
 import { CommandPalette } from "./CommandPalette";
 import { CourseSwitcher } from "./CourseSwitcher";
 import { Spinner } from "./ui";
@@ -38,6 +39,13 @@ export function AppShell() {
   }, []);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(currentTheme);
+
+  const toggleTheme = () => {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    setThemeState(next);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,6 +77,15 @@ export function AppShell() {
         <button type="button" className="search-trigger" onClick={() => setPaletteOpen(true)}>
           <span>Zoek cursus of student…</span>
           <kbd>Ctrl K</kbd>
+        </button>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === "dark" ? "Licht thema" : "Donker thema"}
+          aria-label={theme === "dark" ? "Schakel naar licht thema" : "Schakel naar donker thema"}
+        >
+          {theme === "dark" ? "☀" : "☾"}
         </button>
         <div className="topbar__status">
           {!me && !meError && <Spinner onDark />}
@@ -135,7 +152,7 @@ export function CourseLayout() {
     setCounts({});
     loadCounts();
     return api.onInvalidate((changed) => {
-      if (changed === id) loadCounts();
+      if (changed === id || changed === null) loadCounts();
     });
   }, [id, loadCounts]);
 

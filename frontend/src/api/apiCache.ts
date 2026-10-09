@@ -43,6 +43,11 @@ export function invalidateCourse(courseId: number): void {
   listeners.forEach((l) => l(courseId));
 }
 
+export function clearAll(): void {
+  store.clear();
+  listeners.forEach((l) => l(null));
+}
+
 export function fetchedAt(key: string): number | null {
   return store.get(key)?.fetchedAt ?? null;
 }
