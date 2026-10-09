@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $versionFile = Join-Path $RepoRoot "VERSION"
-$imageRepo = "zotregistry.jelph.nl/jelph/canvastool"
+$imageRepo = "zotregistry.jelph.nl/fontysict/canvastool"
 
 if (-not (Test-Path $versionFile)) {
     Write-Error "Missing VERSION file at $versionFile"

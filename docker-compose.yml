@@ -2,12 +2,12 @@
 services:
   canvastool:
     container_name: canvastool
-    image: zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:?Set CANVASTOOL_VERSION or use compose.ps1 / compose.sh}
+    image: zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION:?Set CANVASTOOL_VERSION or use scripts/build-and-push.ps1}
     build:
       context: .
       tags:
-        - zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION}
-        - zotregistry.jelph.nl/jelph/canvastool:latest
+        - zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION}
+        - zotregistry.jelph.nl/fontysict/canvastool:latest
     ports:
       - "127.0.0.1:8320:8080"
     env_file:
