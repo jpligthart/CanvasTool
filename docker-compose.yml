@@ -1,5 +1,7 @@
 services:
   canvastool:
+    container_name: canvastool
+    image: zotregistry.jelph.nl/jelph/Canvastool:latest
     build: .
     ports:
       - "127.0.0.1:8320:8080"

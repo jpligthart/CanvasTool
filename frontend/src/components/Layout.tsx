@@ -64,8 +64,8 @@ export function AppShell() {
     <div className="app">
       <header className="topbar">
         <Link to="/" className="brand">
-          <span className="brand__mark">Cb</span>
-          Cursusbeheer
+          <span className="brand__mark" aria-hidden="true">Ct</span>
+          Canvastool
         </Link>
         {courseId && (
           <nav className="breadcrumb" aria-label="Kruimelpad">
