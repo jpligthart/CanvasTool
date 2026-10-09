@@ -13,6 +13,20 @@ docker compose up --build
 
 3. Open http://127.0.0.1:8320
 
+## Versie
+
+De applicatieversie staat in **`VERSION`** (bijv. `0.1.0`). Die waarde komt in de UI, `/api/health` en de Docker-image-tag.
+
+Bij een release: pas `VERSION` aan en zet in `.env` dezelfde waarde bij `CANVASTOOL_VERSION` (zie `.env.example`). Daarna:
+
+```powershell
+docker compose build
+docker push zotregistry.jelph.nl/jelph/canvastool:<versie>
+docker push zotregistry.jelph.nl/jelph/canvastool:latest
+```
+
+`docker compose build` (en `up --build`) tagt **tegelijk** de versie-tag en `latest` — één build, twee tags.
+
 ## Frontend development (optioneel)
 
 ```powershell

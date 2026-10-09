@@ -683,6 +683,13 @@ table {
   color: #fff;
 }
 
+.brand__version {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-on-dark-muted);
+  margin-left: -4px;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.canvas_client import close_http
 from app.routers import courses, grades, groups, meta, sections
+from app.version import __version__
 
 
 @asynccontextmanager
@@ -15,7 +16,7 @@ async def lifespan(_: FastAPI):
     await close_http()
 
 
-app = FastAPI(title="Cursusbeheer", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Canvastool", version=__version__, lifespan=lifespan)
 
 app.include_router(meta.router)
 app.include_router(courses.router)
@@ -28,7 +29,7 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 @app.get("/api")
 def api_root():
-    return {"name": "cursusbeheer", "api": "/api/me"}
+    return {"name": "canvastool", "version": __version__, "api": "/api/me"}
 
 
 if STATIC_DIR.is_dir():

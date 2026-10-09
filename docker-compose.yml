@@ -1,8 +1,12 @@
 services:
   canvastool:
     container_name: canvastool
-    image: zotregistry.jelph.nl/jelph/Canvastool:latest
-    build: .
+    image: zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:-0.1.0}
+    build:
+      context: .
+      tags:
+        - zotregistry.jelph.nl/jelph/canvastool:${CANVASTOOL_VERSION:-0.1.0}
+        - zotregistry.jelph.nl/jelph/canvastool:latest
     ports:
       - "127.0.0.1:8320:8080"
     env_file:

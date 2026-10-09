@@ -5,6 +5,7 @@ from app.canvas_client import CanvasAPIError, CanvasClient
 from app.config import get_settings
 from app.deps import get_canvas_client
 from app import operations
+from app.version import __version__
 
 router = APIRouter(prefix="/api", tags=["meta"])
 
@@ -30,7 +31,7 @@ async def api_me(client: CanvasClient = Depends(get_canvas_client)):
 @router.get("/health")
 async def health():
     settings = get_settings()
-    return {"ok": True, "canvas_configured": settings.canvas_configured}
+    return {"ok": True, "version": __version__, "canvas_configured": settings.canvas_configured}
 
 
 @router.post("/cache/clear")

@@ -63,9 +63,10 @@ export function AppShell() {
   return (
     <div className="app">
       <header className="topbar">
-        <Link to="/" className="brand">
+        <Link to="/" className="brand" title={`Canvastool v${__APP_VERSION__}`}>
           <span className="brand__mark" aria-hidden="true">Ct</span>
           Canvastool
+          <span className="brand__version">v{__APP_VERSION__}</span>
         </Link>
         {courseId && (
           <nav className="breadcrumb" aria-label="Kruimelpad">
