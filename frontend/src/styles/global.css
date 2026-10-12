@@ -744,7 +744,17 @@ table {
 }
 
 .topbar__host {
-  opacity: 0.75;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-dark);
+  color: var(--text-on-dark-muted);
+}
+
+.topbar__host--test {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 50%, var(--border-dark));
 }
 
 .topbar__error {

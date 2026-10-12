@@ -17,6 +17,15 @@ export function useShell(): ShellContext {
   return useOutletContext<ShellContext>();
 }
 
+function canvasHostLabel(host: string): string {
+  return host.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function isTestCanvas(host: string): boolean {
+  const name = canvasHostLabel(host).toLowerCase();
+  return name.includes(".test.") || name.startsWith("test.");
+}
+
 function findCourse(courses: CoursesResponse | null, id: number): Course | null {
   if (!courses) return null;
   return courses.active.find((c) => c.id === id) ?? courses.past.find((c) => c.id === id) ?? null;
@@ -95,7 +104,12 @@ export function AppShell() {
             <>
               <span className="status-dot" aria-hidden />
               <span>{me.user.name}</span>
-              <span className="topbar__host">{me.host.replace(/^https?:\/\//, "")}</span>
+              <span
+                className={isTestCanvas(me.host) ? "topbar__host topbar__host--test" : "topbar__host"}
+                title={`Verbonden met ${canvasHostLabel(me.host)}`}
+              >
+                {canvasHostLabel(me.host)}
+              </span>
             </>
           )}
         </div>
