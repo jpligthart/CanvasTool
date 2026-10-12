@@ -166,6 +166,24 @@ async def bulk_place_in_section(
         cache.invalidate_course(course_id, ["users", "sections", "grades"])
 
 
+async def remove_user_from_section(
+    client: CanvasClient, course_id: int, section_id: int, user_id: int
+) -> None:
+    enrollments = await _active_student_enrollments(client, course_id)
+    targets = [e for e in enrollments.get(user_id, []) if e.get("course_section_id") == section_id]
+    if not targets:
+        raise CanvasAPIError(404, "Geen actieve inschrijving in deze sectie")
+    try:
+        for e in targets:
+            await client.request(
+                "DELETE",
+                f"/api/v1/courses/{course_id}/enrollments/{e['id']}",
+                params={"task": "conclude"},
+            )
+    finally:
+        cache.invalidate_course(course_id, ["users", "sections", "grades"])
+
+
 # ---------- Groups ----------
 
 

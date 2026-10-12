@@ -96,6 +96,19 @@ async def test_bulk_section_skips_existing_and_concludes_after_enroll():
     ]
 
 
+async def test_remove_user_from_section_concludes_enrollment():
+    fake = FakeCanvas(
+        {
+            "/api/v1/courses/1/enrollments": [
+                {"id": 900, "user_id": 1, "course_section_id": 5},
+                {"id": 901, "user_id": 2, "course_section_id": 7},
+            ]
+        }
+    )
+    await operations.remove_user_from_section(fake, 1, section_id=5, user_id=1)
+    assert ("DELETE", "/api/v1/courses/1/enrollments/900") in fake.writes()
+
+
 async def test_bulk_section_failed_enroll_keeps_old_enrollment():
     fake = FakeCanvas(
         {"/api/v1/courses/1/enrollments": [{"id": 900, "user_id": 1, "course_section_id": 5}]},

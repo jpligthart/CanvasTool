@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MemberRoster } from "../components/MemberRoster";
+import { MemberRoster, type MemberRosterItem } from "../components/MemberRoster";
 import { api } from "../api/client";
 import type { BulkResult, Section, Student } from "../api/types";
 import { AssignDialog } from "../components/AssignDialog";
@@ -13,6 +13,7 @@ import {
   EmptyState,
   Input,
   LoadingBlock,
+  Modal,
   PageHeader,
   ResultsModal,
   TableWrap,
@@ -33,6 +34,8 @@ export function SectionsPage() {
   const [pickerFor, setPickerFor] = useState<Section | null>(null);
   const [assignIds, setAssignIds] = useState<number[] | null>(null);
   const [results, setResults] = useState<BulkResult[] | null>(null);
+  const [removal, setRemoval] = useState<{ section: Section; member: MemberRosterItem } | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +92,21 @@ export function SectionsPage() {
 
   const isMember = useCallback((s: Student) => !!pickerFor && s.section_ids.includes(pickerFor.id), [pickerFor]);
   const describe = useCallback((s: Student) => s.section_names.join(", "), []);
+
+  const confirmRemoval = async () => {
+    if (!removal) return;
+    setRemoving(true);
+    try {
+      await api.removeSectionMember(id, removal.section.id, removal.member.id);
+      toast.success(`${removal.member.name} verwijderd uit ${removal.section.name}`);
+      setRemoval(null);
+      await load();
+    } catch (e) {
+      toast.error("Verwijderen mislukt", errorMessage(e, "Onbekende fout"));
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   const finishAssign = () => {
     setAssignIds(null);
@@ -178,6 +196,8 @@ export function SectionsPage() {
                           members={members}
                           emptyLabel="Geen studenten in deze sectie."
                           studentsLink={`/cursus/${id}/studenten?sectie=${sec.id}`}
+                          removeFromLabel={sec.name}
+                          onRemove={(m) => setRemoval({ section: sec, member: m })}
                         />
                       </td>
                     </tr>
@@ -215,6 +235,27 @@ export function SectionsPage() {
       />
 
       <ResultsModal results={results} nameById={nameById} onClose={() => setResults(null)} />
+
+      <Modal
+        open={!!removal}
+        title="Uit sectie verwijderen?"
+        onClose={() => !removing && setRemoval(null)}
+        footer={
+          <>
+            <Button variant="secondary" disabled={removing} onClick={() => setRemoval(null)}>
+              Annuleren
+            </Button>
+            <Button variant="danger" disabled={removing} onClick={() => void confirmRemoval()}>
+              {removing ? "Bezig…" : "Verwijderen"}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ margin: 0 }}>
+          <strong>{removal?.member.name}</strong> wordt uit <strong>{removal?.section.name}</strong> gehaald. Als dit
+          hun enige actieve inschrijving is, zijn ze niet langer actieve student in deze cursus.
+        </p>
+      </Modal>
     </>
   );
 }

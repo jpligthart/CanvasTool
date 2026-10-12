@@ -22,6 +22,11 @@ class BulkPlaceBody(BaseModel):
     section_id: int
 
 
+class SectionMemberBody(BaseModel):
+    user_id: int
+    section_id: int
+
+
 @router.get("")
 async def list_sections(course_id: int, client: CanvasClient = Depends(get_canvas_client)):
     try:
@@ -69,3 +74,16 @@ async def bulk_place(
     except CanvasAPIError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message) from e
     return {"results": results}
+
+
+@router.delete("/members")
+async def remove_member(
+    course_id: int,
+    body: SectionMemberBody,
+    client: CanvasClient = Depends(get_canvas_client),
+):
+    try:
+        await operations.remove_user_from_section(client, course_id, body.section_id, body.user_id)
+        return {"ok": True}
+    except CanvasAPIError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message) from e

@@ -73,6 +73,14 @@ export const api = {
     return r;
   },
 
+  removeSectionMember: async (courseId: number, sectionId: number, userId: number) => {
+    await json(`/api/courses/${courseId}/sections/members`, {
+      method: "DELETE",
+      body: JSON.stringify({ user_id: userId, section_id: sectionId }),
+    });
+    invalidateCourse(courseId, ["students", "sections", "grade-summary"]);
+  },
+
   groups: (courseId: number) =>
     cachedFetch(`/api/courses/${courseId}/groups`, () =>
       json<GroupCategory[]>(`/api/courses/${courseId}/groups`),
