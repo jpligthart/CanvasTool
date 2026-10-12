@@ -1046,11 +1046,6 @@ table {
     overflow: auto;
   }
 
-  .group-grid.fill {
-    align-content: start;
-    padding-bottom: 2px;
-  }
-
   .master-detail.fill {
     grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
@@ -1455,46 +1450,11 @@ table {
   color: var(--accent);
 }
 
-.group-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.group-card {
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.group-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.group-card__name {
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.group-card__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-}
-
 .member-list {
-  margin: 10px 0 0;
-  padding: 8px 0 0;
+  margin: 0;
+  padding: 0;
   list-style: none;
-  border-top: 1px solid var(--border);
+  max-width: 420px;
 }
 
 .member-list li {

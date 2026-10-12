@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { BulkResult, Group, GroupCategory, GroupMember, Student } from "../api/types";
@@ -16,6 +16,9 @@ import {
   Modal,
   PageHeader,
   ResultsModal,
+  TableWrap,
+  Td,
+  Th,
 } from "../components/ui";
 
 function occupancy(g: Group): { label: string; full: boolean } {
@@ -223,52 +226,80 @@ export function GroupsPage() {
               {active.groups.length === 0 ? (
                 <EmptyState title="Nog geen groepen in deze set" hint="Maak er een aan met 'Nieuwe groep'." />
               ) : (
-                <div className="group-grid fill">
-                  {active.groups.map((g) => {
-                    const occ = occupancy(g);
-                    const open = expanded.has(g.id);
-                    return (
-                      <div key={g.id} className="group-card">
-                        <div className="group-card__head">
-                          <span className="group-card__name">{g.name}</span>
-                          <Badge tone={occ.full ? "warning" : "neutral"}>{occ.label}</Badge>
-                        </div>
-                        <div className="group-card__actions">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleExpanded(g.id)}
-                            aria-expanded={open}
-                            disabled={g.member_count === 0}
-                          >
-                            Leden ({g.member_count}) {open ? "▴" : "▾"}
-                          </Button>
-                          <Button variant="secondary" size="sm" onClick={() => setPickerFor(g)}>
-                            + Toevoegen
-                          </Button>
-                        </div>
-                        {open && g.members.length > 0 && (
-                          <ul className="member-list">
-                            {g.members.map((m) => (
-                              <li key={m.id}>
-                                <span>{m.name}</span>
-                                <button
-                                  type="button"
-                                  className="icon-btn"
-                                  title={`Verwijder ${m.name} uit ${g.name}`}
-                                  aria-label={`Verwijder ${m.name} uit ${g.name}`}
-                                  onClick={() => setRemoval({ group: g, member: m })}
-                                >
-                                  ×
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <TableWrap fill>
+                  <thead>
+                    <tr>
+                      <Th>Groep</Th>
+                      <Th style={{ width: 120 }}>Leden</Th>
+                      <Th className="col-actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {active.groups.map((g) => {
+                      const occ = occupancy(g);
+                      const open = expanded.has(g.id);
+                      return (
+                        <Fragment key={g.id}>
+                          <tr className="is-clickable" onClick={() => toggleExpanded(g.id)}>
+                            <Td>
+                              <div style={{ fontWeight: 600 }}>
+                                <span className="disclosure" aria-hidden>
+                                  {open ? "▾" : "▸"}
+                                </span>
+                                {g.name}
+                              </div>
+                            </Td>
+                            <Td>
+                              {g.max_membership ? (
+                                <Badge tone={occ.full ? "warning" : "neutral"}>{occ.label}</Badge>
+                              ) : (
+                                g.member_count
+                              )}
+                            </Td>
+                            <Td className="col-actions">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPickerFor(g);
+                                }}
+                              >
+                                Toevoegen
+                              </Button>
+                            </Td>
+                          </tr>
+                          {open && (
+                            <tr className="row-detail">
+                              <td colSpan={3}>
+                                {g.members.length === 0 ? (
+                                  <span className="muted">Geen leden in deze groep.</span>
+                                ) : (
+                                  <ul className="member-list">
+                                    {g.members.map((m) => (
+                                      <li key={m.id}>
+                                        <span>{m.name}</span>
+                                        <button
+                                          type="button"
+                                          className="icon-btn"
+                                          title={`Verwijder ${m.name} uit ${g.name}`}
+                                          aria-label={`Verwijder ${m.name} uit ${g.name}`}
+                                          onClick={() => setRemoval({ group: g, member: m })}
+                                        >
+                                          ×
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </TableWrap>
               )}
             </>
           )}
