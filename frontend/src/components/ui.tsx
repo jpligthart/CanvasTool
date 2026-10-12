@@ -95,9 +95,14 @@ export function TableWrap({ children, style, fill }: PropsWithChildren<{ style?:
   );
 }
 
-export function Th({ children, style, className }: PropsWithChildren<{ style?: CSSProperties; className?: string }>) {
+export function Th({
+  children,
+  style,
+  className,
+  ariaSort,
+}: PropsWithChildren<{ style?: CSSProperties; className?: string; ariaSort?: "ascending" | "descending" | "none" }>) {
   return (
-    <th className={className} style={style}>
+    <th className={className} style={style} aria-sort={ariaSort}>
       {children}
     </th>
   );

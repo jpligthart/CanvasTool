@@ -4,7 +4,14 @@ import { api } from "../api/client";
 import type { Course } from "../api/types";
 import { useShell } from "../components/Layout";
 import { errorMessage, useToast } from "../components/Toast";
-import { loadCourseFilters, saveCourseFilters, type CourseFilters, type CourseStatus } from "../lib/courseFilters";
+import {
+  loadCourseFilters,
+  saveCourseFilters,
+  type CourseFilters,
+  type CourseSortDir,
+  type CourseSortKey,
+  type CourseStatus,
+} from "../lib/courseFilters";
 import { loadFavorites, toggleFavorite } from "../lib/favorites";
 import {
   Alert,
@@ -44,6 +51,42 @@ function period(c: Course): string {
 }
 const byLabel = (a: Course, b: Course) => label(a).localeCompare(label(b), "nl");
 
+const statusLabel = (c: Course) =>
+  c.workflow_state === "available"
+    ? "Gepubliceerd"
+    : c.workflow_state === "completed"
+      ? "Afgerond"
+      : (c.workflow_state ?? "");
+
+const timestamp = (value?: string | null) => {
+  if (!value) return null;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? null : time;
+};
+
+function compareText(a: string, b: string, sign: number): number {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a.localeCompare(b, "nl") * sign;
+}
+
+function compareNullable(a: number | null, b: number | null, sign: number): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return (a - b) * sign;
+}
+
+function compareCourses(a: Course, b: Course, key: CourseSortKey, dir: CourseSortDir): number {
+  const sign = dir === "asc" ? 1 : -1;
+  if (key === "name") return label(a).localeCompare(label(b), "nl") * sign;
+  if (key === "term") return compareText(a.term ?? "", b.term ?? "", sign);
+  if (key === "status") return compareText(statusLabel(a), statusLabel(b), sign);
+  const byStart = compareNullable(timestamp(a.start_at), timestamp(b.start_at), sign);
+  return byStart !== 0 ? byStart : compareNullable(timestamp(a.end_at), timestamp(b.end_at), sign);
+}
+
 function matches(c: Course, needle: string): boolean {
   return !needle || `${c.course_code ?? ""} ${c.name} ${c.term ?? ""}`.toLowerCase().includes(needle);
 }
@@ -74,6 +117,32 @@ function FavoriteTile({ course, onUnfavorite }: { course: Course; onUnfavorite: 
         ))}
       </nav>
     </div>
+  );
+}
+
+function SortTh({
+  label: column,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  label: string;
+  sortKey: CourseSortKey;
+  activeKey: CourseSortKey;
+  dir: CourseSortDir;
+  onSort: (key: CourseSortKey) => void;
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <Th ariaSort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button type="button" className={`th-sort${active ? " is-active" : ""}`} onClick={() => onSort(sortKey)}>
+        {column}
+        <span className="th-sort__mark" aria-hidden="true">
+          {active ? (dir === "asc" ? "↑" : "↓") : ""}
+        </span>
+      </button>
+    </Th>
   );
 }
 
@@ -136,7 +205,7 @@ export function HomePage() {
   const [q, setQ] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
-  const { scope, term, status } = filters;
+  const { scope, term, status, sortKey, sortDir } = filters;
 
   useEffect(() => {
     if (!me?.user?.id) return;
@@ -180,9 +249,14 @@ export function HomePage() {
         .filter((c) => matches(c, needle))
         .filter((c) => !effectiveTerm || c.term === effectiveTerm)
         .filter((c) => !status || (status === "published") === isPublished(c))
-        .sort(byLabel),
-    [source, needle, effectiveTerm, status],
+        .sort((a, b) => compareCourses(a, b, sortKey, sortDir)),
+    [source, needle, effectiveTerm, status, sortKey, sortDir],
   );
+
+  const onSort = (key: CourseSortKey) => {
+    if (sortKey === key) updateFilters({ sortDir: sortDir === "asc" ? "desc" : "asc" });
+    else updateFilters({ sortKey: key, sortDir: "asc" });
+  };
 
   const filtersActive = !!(needle || effectiveTerm || status);
 
@@ -333,10 +407,10 @@ export function HomePage() {
               <thead>
                 <tr>
                   <Th className="col-check" />
-                  <Th>Cursus</Th>
-                  <Th>Periode</Th>
-                  <Th>Looptijd</Th>
-                  <Th>Status</Th>
+                  <SortTh label="Cursus" sortKey="name" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+                  <SortTh label="Periode" sortKey="term" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+                  <SortTh label="Looptijd" sortKey="period" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+                  <SortTh label="Status" sortKey="status" activeKey={sortKey} dir={sortDir} onSort={onSort} />
                   <Th className="col-actions" />
                 </tr>
               </thead>

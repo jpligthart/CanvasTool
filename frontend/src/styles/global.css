@@ -389,6 +389,34 @@ table {
   white-space: nowrap;
 }
 
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.th-sort:hover,
+.th-sort.is-active {
+  color: var(--text-primary);
+}
+
+.th-sort__mark {
+  display: inline-block;
+  width: 0.7em;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent);
+}
+
 .table td {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
