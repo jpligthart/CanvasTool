@@ -74,8 +74,20 @@ export function AppShell() {
       <header className="topbar">
         <Link to="/" className="brand" title={`Canvastool v${__APP_VERSION__}`}>
           <span className="brand__mark" aria-hidden="true">Ct</span>
-          Canvastool
-          <span className="brand__version">v{__APP_VERSION__}</span>
+          <span className="brand__text">
+            <span className="brand__name">
+              Canvastool
+              <span className="brand__version">v{__APP_VERSION__}</span>
+            </span>
+            {me && (
+              <span
+                className={isTestCanvas(me.host) ? "brand__host brand__host--test" : "brand__host"}
+                title={`Verbonden met ${canvasHostLabel(me.host)}`}
+              >
+                {canvasHostLabel(me.host)}
+              </span>
+            )}
+          </span>
         </Link>
         {courseId && (
           <nav className="breadcrumb" aria-label="Kruimelpad">
@@ -104,12 +116,6 @@ export function AppShell() {
             <>
               <span className="status-dot" aria-hidden />
               <span>{me.user.name}</span>
-              <span
-                className={isTestCanvas(me.host) ? "topbar__host topbar__host--test" : "topbar__host"}
-                title={`Verbonden met ${canvasHostLabel(me.host)}`}
-              >
-                {canvasHostLabel(me.host)}
-              </span>
             </>
           )}
         </div>

@@ -711,11 +711,37 @@ table {
   color: #fff;
 }
 
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brand__name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 .brand__version {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-on-dark-muted);
-  margin-left: -4px;
+}
+
+.brand__host {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-on-dark-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand__host--test {
+  color: var(--warning);
 }
 
 .breadcrumb {
@@ -741,20 +767,6 @@ table {
   font-size: 13px;
   color: var(--text-on-dark-muted);
   flex-shrink: 0;
-}
-
-.topbar__host {
-  font-size: 11px;
-  line-height: 1;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border-dark);
-  color: var(--text-on-dark-muted);
-}
-
-.topbar__host--test {
-  color: var(--warning);
-  border-color: color-mix(in srgb, var(--warning) 50%, var(--border-dark));
 }
 
 .topbar__error {
