@@ -10,6 +10,7 @@ import {
   Input,
   LoadingBlock,
   PageHeader,
+  Spinner,
   TableWrap,
   Td,
   Th,
@@ -35,6 +36,23 @@ const isGraded = (s: Submission) => s.score != null || s.workflow_state === "gra
 function scoreLabel(score: number | null | undefined, grade: string | null | undefined): string {
   if (score != null) return num.format(score);
   return grade ?? "—";
+}
+
+function AssignmentMeta({ assignment }: { assignment: Assignment }) {
+  return (
+    <div className="detail-head">
+      <h2>{assignment.name}</h2>
+      <div className="muted">
+        {[
+          assignment.points_possible != null ? `${num.format(assignment.points_possible)} punten` : null,
+          assignment.due_at ? `deadline ${date.format(new Date(assignment.due_at))}` : "geen deadline",
+          assignment.published === false ? "niet gepubliceerd" : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </div>
+    </div>
+  );
 }
 
 function Submissions({ courseId, assignment }: { courseId: number; assignment: Assignment }) {
@@ -74,8 +92,25 @@ function Submissions({ courseId, assignment }: { courseId: number; assignment: A
     }
   }, [rows, filter]);
 
-  if (error) return <Alert tone="error">{error}</Alert>;
-  if (!rows || !stats) return <LoadingBlock />;
+  if (error) {
+    return (
+      <>
+        <AssignmentMeta assignment={assignment} />
+        <Alert tone="error">{error}</Alert>
+      </>
+    );
+  }
+  if (!rows || !stats) {
+    return (
+      <>
+        <AssignmentMeta assignment={assignment} />
+        <div className="detail-loading" role="status">
+          <Spinner />
+          <span>Inzendingen ophalen…</span>
+        </div>
+      </>
+    );
+  }
 
   const filters: { id: SubFilter; label: string; count: number }[] = [
     { id: "all", label: "Alle", count: stats.total },
@@ -86,18 +121,7 @@ function Submissions({ courseId, assignment }: { courseId: number; assignment: A
 
   return (
     <>
-      <div className="detail-head">
-        <h2>{assignment.name}</h2>
-        <div className="muted">
-          {[
-            assignment.points_possible != null ? `${num.format(assignment.points_possible)} punten` : null,
-            assignment.due_at ? `deadline ${date.format(new Date(assignment.due_at))}` : "geen deadline",
-            assignment.published === false ? "niet gepubliceerd" : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </div>
-      </div>
+      <AssignmentMeta assignment={assignment} />
 
       <div className="stats">
         <div className="stat">
@@ -347,7 +371,7 @@ export function AssignmentsPage() {
           </div>
           <div className="detail">
             {selected ? (
-              <Submissions courseId={id} assignment={selected} />
+              <Submissions key={selected.id} courseId={id} assignment={selected} />
             ) : (
               <EmptyState title="Kies een opdracht" hint="Selecteer links een opdracht om de inzendingen te zien." />
             )}

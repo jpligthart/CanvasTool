@@ -1707,6 +1707,14 @@ table {
   font-size: 18px;
 }
 
+.detail-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+  color: var(--text-muted);
+}
+
 .stats {
   display: flex;
   gap: 32px;
