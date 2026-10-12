@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { MemberRoster } from "../components/MemberRoster";
 import { api } from "../api/client";
 import type { BulkResult, Section, Student } from "../api/types";
 import { AssignDialog } from "../components/AssignDialog";
@@ -136,7 +137,7 @@ export function SectionsPage() {
           <thead>
             <tr>
               <Th>Sectie</Th>
-              <Th style={{ width: 140 }}>Studenten</Th>
+              <Th style={{ width: 140 }}>Leden</Th>
               <Th className="col-actions" />
             </tr>
           </thead>
@@ -173,22 +174,11 @@ export function SectionsPage() {
                   {open && (
                     <tr className="row-detail">
                       <td colSpan={3}>
-                        {members.length === 0 ? (
-                          <span className="muted">Geen studenten in deze sectie.</span>
-                        ) : (
-                          <div className="name-list">
-                            {members.map((m) => (
-                              <span key={m.id} className="badge">
-                                {m.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div style={{ marginTop: 10 }}>
-                          <Link className="link-btn" to={`/cursus/${id}/studenten?sectie=${sec.id}`}>
-                            Open in Studenten →
-                          </Link>
-                        </div>
+                        <MemberRoster
+                          members={members}
+                          emptyLabel="Geen studenten in deze sectie."
+                          studentsLink={`/cursus/${id}/studenten?sectie=${sec.id}`}
+                        />
                       </td>
                     </tr>
                   )}

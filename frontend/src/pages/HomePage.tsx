@@ -322,7 +322,7 @@ export function HomePage() {
           )}
 
           <div className="toolbar">
-            <div className="tabs" role="tablist" style={{ marginBottom: 0, borderBottom: "none" }}>
+            <div className="tabs" role="tablist" style={{ marginBottom: 0, boxShadow: "none" }}>
               <button
                 type="button"
                 role="tab"

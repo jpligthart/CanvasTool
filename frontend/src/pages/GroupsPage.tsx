@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { BulkResult, Group, GroupCategory, GroupMember, Student } from "../api/types";
 import { AssignDialog } from "../components/AssignDialog";
+import { MemberRoster } from "../components/MemberRoster";
 import { ManageActionButton } from "../components/ManageActionButton";
 import { StudentPicker } from "../components/StudentPicker";
 import { errorMessage, useToast } from "../components/Toast";
@@ -265,33 +266,20 @@ export function GroupsPage() {
                                   setPickerFor(g);
                                 }}
                               >
-                                Toevoegen
+                                Studenten toevoegen
                               </Button>
                             </Td>
                           </tr>
                           {open && (
                             <tr className="row-detail">
                               <td colSpan={3}>
-                                {g.members.length === 0 ? (
-                                  <span className="muted">Geen leden in deze groep.</span>
-                                ) : (
-                                  <ul className="member-list">
-                                    {g.members.map((m) => (
-                                      <li key={m.id}>
-                                        <span>{m.name}</span>
-                                        <button
-                                          type="button"
-                                          className="icon-btn"
-                                          title={`Verwijder ${m.name} uit ${g.name}`}
-                                          aria-label={`Verwijder ${m.name} uit ${g.name}`}
-                                          onClick={() => setRemoval({ group: g, member: m })}
-                                        >
-                                          ×
-                                        </button>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
+                                <MemberRoster
+                                  members={g.members}
+                                  emptyLabel="Geen leden in deze groep."
+                                  studentsLink={`/cursus/${id}/studenten?groep=g:${g.id}`}
+                                  removeFromLabel={g.name}
+                                  onRemove={(m) => setRemoval({ group: g, member: m })}
+                                />
                               </td>
                             </tr>
                           )}
