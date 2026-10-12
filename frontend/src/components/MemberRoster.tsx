@@ -18,19 +18,21 @@ export function MemberRoster({
   onRemove,
   removeFromLabel,
 }: MemberRosterProps) {
+  const removable = !!onRemove;
+
   return (
-    <>
+    <div className={`member-roster${members.length > 0 ? " member-roster--card" : ""}`}>
       {members.length === 0 ? (
         <span className="muted">{emptyLabel}</span>
       ) : (
-        <ul className="member-list">
+        <ul className={`member-list${removable ? " member-list--removable" : ""}`}>
           {members.map((m) => (
             <li key={m.id}>
-              <span>{m.name}</span>
+              <span className="member-list__name">{m.name}</span>
               {onRemove && (
                 <button
                   type="button"
-                  className="icon-btn"
+                  className="icon-btn member-list__remove"
                   title={
                     removeFromLabel ? `Verwijder ${m.name} uit ${removeFromLabel}` : `Verwijder ${m.name}`
                   }
@@ -53,6 +55,6 @@ export function MemberRoster({
           </Link>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -1450,22 +1450,76 @@ table {
   color: var(--accent);
 }
 
+.member-roster {
+  max-width: min(52rem, 100%);
+}
+
+.member-roster--card {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
 .member-list {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.member-roster__footer {
-  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+  gap: 4px 10px;
 }
 
 .member-list li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 2px 0;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.member-list li:hover {
+  background: var(--bg-hover);
+}
+
+.member-list__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.member-list--removable .member-list__remove {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+}
+
+.member-list--removable li:hover .member-list__remove,
+.member-list--removable li:focus-within .member-list__remove {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .member-list--removable .member-list__remove {
+    opacity: 1;
+  }
+}
+
+.member-roster__footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.member-roster:not(.member-roster--card) .member-roster__footer {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* ---------- Command palette ---------- */
