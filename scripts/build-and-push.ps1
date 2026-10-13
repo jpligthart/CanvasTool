@@ -70,4 +70,12 @@ try {
 }
 finally {
     Pop-Location
+    # Drop the buildkit container; --keep-state leaves the cache volume for the next run.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    docker buildx rm --keep-state --force $builder 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Could not remove buildx builder $builder (exit $LASTEXITCODE)." -ForegroundColor Yellow
+    }
+    $ErrorActionPreference = $prevEap
 }
