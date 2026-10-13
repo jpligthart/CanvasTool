@@ -29,10 +29,14 @@ class TTLCache:
     A load that started before an invalidation of its course (or of its kind
     within that course) is not stored, so a write never gets overwritten by a
     slower, older read.
+
+    Expired entries are removed on the next cache access, including ones that
+    nobody asks for again. A failed reload does not put the old value back.
     """
 
     def __init__(self) -> None:
-        self._data: dict[tuple[Hashable, ...], tuple[float, Any]] = {}
+        # key -> (expires_at, fetched_at, value), both times monotonic
+        self._data: dict[tuple[Hashable, ...], tuple[float, float, Any]] = {}
         self._inflight: dict[tuple[Hashable, ...], asyncio.Future[Any]] = {}
         self._generation: dict[Hashable, int] = {}
 
@@ -46,6 +50,20 @@ class TTLCache:
     def _bump(self, scope: Hashable) -> None:
         self._generation[scope] = self._generation.get(scope, 0) + 1
 
+    def _evict_expired(self) -> None:
+        now = time.monotonic()
+        expired = [key for key, (expires_at, _, _) in self._data.items() if expires_at <= now]
+        for key in expired:
+            del self._data[key]
+
+    def newer_than(self, key: tuple[Hashable, ...], max_age: float) -> bool:
+        """True when `key` is still inside its TTL and was stored within `max_age` seconds."""
+        self._evict_expired()
+        hit = self._data.get(key)
+        if hit is None:
+            return False
+        return time.monotonic() - hit[1] <= max_age
+
     async def get_or_load(
         self,
         key: tuple[Hashable, ...],
@@ -54,12 +72,13 @@ class TTLCache:
         *,
         fresh: bool = False,
     ) -> T:
+        self._evict_expired()
         if fresh:
             self._data.pop(key, None)
         else:
             hit = self._data.get(key)
-            if hit and hit[0] > time.monotonic():
-                return hit[1]
+            if hit is not None:
+                return hit[2]
 
         pending = self._inflight.get(key)
         if pending is not None and not fresh:
@@ -76,7 +95,8 @@ class TTLCache:
             raise
         else:
             if self._generation_of(key) == generation:
-                self._data[key] = (time.monotonic() + ttl, value)
+                now = time.monotonic()
+                self._data[key] = (now + ttl, now, value)
             future.set_result(value)
             return value
         finally:
@@ -85,6 +105,7 @@ class TTLCache:
 
     def invalidate_course(self, course_id: int, kinds: Iterable[str] | None = None) -> None:
         """Drop cached data of one course; with `kinds`, only those kinds (e.g. "groups")."""
+        self._evict_expired()
         if kinds is None:
             self._bump(course_id)
             doomed = [k for k in self._data if _course_of(k) == course_id]
@@ -97,6 +118,7 @@ class TTLCache:
             del self._data[key]
 
     def invalidate(self, key: tuple[Hashable, ...]) -> None:
+        self._evict_expired()
         self._data.pop(key, None)
 
     def clear(self) -> None:

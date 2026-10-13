@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 import pytest
@@ -138,3 +139,74 @@ async def test_students_reuse_cached_groups_and_sections():
     assert len(fake.calls) - before == 1
     assert students[0]["section_names"] == ["Klas A"]
     assert students[0]["groups"][0]["name"] == "Team 1"
+    assert "current_score" not in students[0]
+
+
+def _graded_user(name: str, user_id: int, **grades: Any) -> dict[str, Any]:
+    return {
+        "id": user_id,
+        "name": name,
+        "enrollments": [
+            {
+                "type": "StudentEnrollment",
+                "enrollment_state": "active",
+                "course_section_id": 5,
+                "grades": grades,
+            }
+        ],
+    }
+
+
+async def test_grade_summary_reads_scores_from_users():
+    fake = FakeCanvas(
+        {
+            "/api/v1/courses/1/users": [
+                _graded_user("Anna", 1, current_score=80, final_score=70, current_grade="B", final_grade="C"),
+                {
+                    "id": 2,
+                    "name": "Bram",
+                    "enrollments": [
+                        {
+                            "type": "StudentEnrollment",
+                            "enrollment_state": "completed",
+                            "course_section_id": 5,
+                            "grades": {"current_score": 10},
+                        }
+                    ],
+                },
+            ]
+        }
+    )
+    rows = await operations.course_grade_summary(fake, 1)
+    assert fake.calls == [("GET", "/api/v1/courses/1/users")]
+    assert rows == [
+        {
+            "user_id": 1,
+            "name": "Anna",
+            "current_score": 80,
+            "final_score": 70,
+            "current_grade": "B",
+            "final_grade": "C",
+        }
+    ]
+
+    await operations.course_grade_summary(fake, 1)
+    assert fake.calls == [("GET", "/api/v1/courses/1/users")]
+
+
+async def test_grade_summary_reuses_users_younger_than_grade_ttl():
+    fake = FakeCanvas({"/api/v1/courses/1/users": [_graded_user("Anna", 1, current_score=80)]})
+    await operations._list_course_users(fake, 1)
+    await operations.course_grade_summary(fake, 1)
+    assert fake.calls == [("GET", "/api/v1/courses/1/users")]
+
+
+async def test_grade_summary_refreshes_users_older_than_grade_ttl():
+    fake = FakeCanvas({"/api/v1/courses/1/users": [_graded_user("Anna", 1, current_score=80)]})
+    await operations._list_course_users(fake, 1)
+    key = ("course", 1, "users")
+    expires_at, _, value = cache._data[key]
+    cache._data[key] = (expires_at, time.monotonic() - 1000, value)
+
+    await operations.course_grade_summary(fake, 1)
+    assert fake.calls == [("GET", "/api/v1/courses/1/users"), ("GET", "/api/v1/courses/1/users")]

@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from app.cache import TTLCache
 
@@ -116,3 +117,34 @@ async def test_failed_load_is_not_cached():
         return 1
 
     assert await cache.get_or_load(("k",), 60, ok) == 1
+
+
+async def test_expired_entries_are_evicted_on_other_access():
+    cache = TTLCache()
+
+    async def load():
+        return "kept"
+
+    await cache.get_or_load(("a",), 60, load)
+    await cache.get_or_load(("b",), 60, load)
+    _, fetched_at, value = cache._data[("a",)]
+    cache._data[("a",)] = (time.monotonic() - 1, fetched_at, value)
+
+    assert await cache.get_or_load(("b",), 60, load) == "kept"
+    assert ("a",) not in cache._data
+    assert ("b",) in cache._data
+
+
+async def test_expired_value_is_dropped_when_reload_fails():
+    cache = TTLCache()
+    cache._data[("k",)] = (time.monotonic() - 1, time.monotonic() - 10, "secret")
+
+    async def boom():
+        raise RuntimeError("nope")
+
+    try:
+        await cache.get_or_load(("k",), 60, boom)
+    except RuntimeError:
+        pass
+
+    assert ("k",) not in cache._data

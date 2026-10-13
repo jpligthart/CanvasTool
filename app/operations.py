@@ -291,7 +291,9 @@ async def remove_user_from_group(client: CanvasClient, course_id: int, group_id:
 # ---------- Students ----------
 
 
-async def _list_course_users(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
+async def _list_course_users(
+    client: CanvasClient, course_id: int, *, fresh: bool = False
+) -> list[dict[str, Any]]:
     async def load() -> list[dict[str, Any]]:
         users = await client.get_paginated(
             f"/api/v1/courses/{course_id}/users",
@@ -300,10 +302,17 @@ async def _list_course_users(client: CanvasClient, course_id: int) -> list[dict[
         result: list[dict[str, Any]] = []
         for u in users:
             section_ids: list[int] = []
+            grades: dict[str, Any] = {}
+            active = False
             for e in u.get("enrollments") or []:
+                if e.get("type") != "StudentEnrollment" or e.get("enrollment_state") != "active":
+                    continue
+                active = True
                 sid = e.get("course_section_id")
-                if e.get("type") == "StudentEnrollment" and e.get("enrollment_state") == "active" and sid:
+                if sid:
                     section_ids.append(sid)
+                if not grades and isinstance(e.get("grades"), dict):
+                    grades = e["grades"]
             result.append(
                 {
                     "id": u["id"],
@@ -312,12 +321,17 @@ async def _list_course_users(client: CanvasClient, course_id: int) -> list[dict[
                     "sis_user_id": u.get("sis_user_id"),
                     "login_id": u.get("login_id"),
                     "section_ids": section_ids,
+                    "active_enrollment": active,
+                    "current_score": grades.get("current_score"),
+                    "final_score": grades.get("final_score"),
+                    "current_grade": grades.get("current_grade"),
+                    "final_grade": grades.get("final_grade"),
                 }
             )
         result.sort(key=lambda s: (s.get("name") or "").lower())
         return result
 
-    return await cache.get_or_load(("course", course_id, "users"), TTL_ROSTER, load)
+    return await cache.get_or_load(("course", course_id, "users"), TTL_ROSTER, load, fresh=fresh)
 
 
 async def list_course_students(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
@@ -337,7 +351,12 @@ async def list_course_students(client: CanvasClient, course_id: int) -> list[dic
 
     return [
         {
-            **u,
+            "id": u["id"],
+            "name": u.get("name"),
+            "email": u.get("email"),
+            "sis_user_id": u.get("sis_user_id"),
+            "login_id": u.get("login_id"),
+            "section_ids": u["section_ids"],
             "section_names": [section_name.get(sid, f"Sectie {sid}") for sid in u["section_ids"]],
             "groups": groups_by_user.get(u["id"], []),
         }
@@ -387,30 +406,28 @@ async def list_submissions(client: CanvasClient, course_id: int, assignment_id: 
 
 
 async def course_grade_summary(client: CanvasClient, course_id: int) -> list[dict[str, Any]]:
+    """One row per active student.
+
+    A teacher token already gets `grades` on each enrollment from the users
+    call, so this does not walk `/enrollments` again. The users payload is
+    refreshed when it is older than the grade TTL.
+    """
+
     async def load() -> list[dict[str, Any]]:
-        rows = await client.get_paginated(
-            f"/api/v1/courses/{course_id}/enrollments",
-            params={
-                "type[]": "StudentEnrollment",
-                "state[]": "active",
-                "include[]": ["total_standing", "avatar_url"],
-            },
-        )
-        result: list[dict[str, Any]] = []
-        for r in rows:
-            user = r.get("user") or {}
-            grades = r.get("grades") if isinstance(r.get("grades"), dict) else {}
-            result.append(
-                {
-                    "user_id": r.get("user_id"),
-                    "name": user.get("name") or user.get("sortable_name"),
-                    "current_score": grades.get("current_score"),
-                    "final_score": grades.get("final_score"),
-                    "current_grade": grades.get("current_grade"),
-                    "final_grade": grades.get("final_grade"),
-                }
-            )
-        result.sort(key=lambda x: (x.get("name") or "").lower())
-        return result
+        users_key = ("course", course_id, "users")
+        refresh = not cache.newer_than(users_key, TTL_GRADES)
+        users = await _list_course_users(client, course_id, fresh=refresh)
+        return [
+            {
+                "user_id": u["id"],
+                "name": u.get("name"),
+                "current_score": u.get("current_score"),
+                "final_score": u.get("final_score"),
+                "current_grade": u.get("current_grade"),
+                "final_grade": u.get("final_grade"),
+            }
+            for u in users
+            if u.get("active_enrollment")
+        ]
 
     return await cache.get_or_load(("course", course_id, "grades"), TTL_GRADES, load)
