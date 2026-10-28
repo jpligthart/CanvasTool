@@ -18,6 +18,16 @@ Lokaal krijg je image-tag **`local`**; de app-versie in de UI komt nog steeds ui
 
 Productie (`docker-scripts/canvastool`, image `:latest`) blijft op http://127.0.0.1:8320, container `canvastool`. Lokaal gebruikt poort **8321** en container `canvastool-dev`, zodat die twee elkaar niet in de weg zitten.
 
+## Security (lokaal binden)
+
+De app heeft **geen login**. Wie de HTTP-poort bereikt, praat mee met jouw Canvas API-token (secties/groepen wijzigen, studenten/cijfers lezen).
+
+Daarom bindt `docker-compose.yml` expres alleen op **`127.0.0.1`**, niet op `0.0.0.0`. Zo is de UI alleen vanaf deze machine bereikbaar, niet vanaf het LAN of internet.
+
+- Laat die `127.0.0.1:`-prefix staan.
+- Zet de poort niet open via reverse proxy / port-forward zonder aparte authenticatie.
+- Houd `CANVAS_API_TOKEN` in `.env` (gitignored); commit die nooit.
+
 ## Versie & Docker release
 
 **Dagelijks lokaal:** `docker compose up --build` — geen release-script nodig.
