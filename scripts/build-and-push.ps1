@@ -1,5 +1,6 @@
-# Build Canvastool for linux/amd64 and linux/arm64, tag version + latest, push to Zot.
-# Version comes from ../VERSION — the only place you need to bump it.
+# Release helper (not for daily local dev — use `docker compose up --build` for that).
+# Builds linux/amd64 + linux/arm64, tags VERSION + latest, pushes to CANVASTOOL_IMAGE.
+# Does not bump VERSION: edit the VERSION file yourself before running.
 param(
     [switch]$SkipPush
 )
@@ -7,8 +8,26 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $versionFile = Join-Path $RepoRoot "VERSION"
-$imageRepo = "zotregistry.jelph.nl/fontysict/canvastool"
+$envFile = Join-Path $RepoRoot ".env"
 $platforms = "linux/amd64,linux/arm64"
+
+function Get-DotEnvValue([string]$Path, [string]$Key) {
+    if (-not (Test-Path $Path)) { return $null }
+    foreach ($line in Get-Content $Path) {
+        if ($line -match "^\s*$([regex]::Escape($Key))\s*=\s*(.*)$") {
+            return $matches[1].Trim().Trim('"').Trim("'")
+        }
+    }
+    return $null
+}
+
+$imageRepo = $env:CANVASTOOL_IMAGE
+if (-not $imageRepo) {
+    $imageRepo = Get-DotEnvValue $envFile "CANVASTOOL_IMAGE"
+}
+if (-not $imageRepo) {
+    Write-Error "Set CANVASTOOL_IMAGE in .env or the environment (registry/repo without tag)."
+}
 
 if (-not (Test-Path $versionFile)) {
     Write-Error "Missing VERSION file at $versionFile"
