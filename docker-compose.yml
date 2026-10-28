@@ -3,7 +3,7 @@
 services:
   canvastool:
     container_name: canvastool-dev
-    image: zotregistry.jelph.nl/fontysict/canvastool:${CANVASTOOL_VERSION:-local}
+    image: ${CANVASTOOL_IMAGE:-canvastool}:${CANVASTOOL_VERSION:-local}
     build:
       context: .
       args:
